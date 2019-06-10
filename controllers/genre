@@ -1,0 +1,70 @@
+const Joi = require('joi');
+const connection = require('../startup/db')();
+
+function getGenre() {
+    return new Promise((resolve, reject) => {
+        const sql = 'SELECT * FROM genres';
+        connection.query(sql, (error, results) => {
+            if (error){
+                return reject(error.sqlMessage);
+            }
+            return resolve(results);
+        });
+    });
+}
+
+function addGenre(genre) {
+    return new Promise((resolve, reject) => {
+        const result = validateGenre(genre);
+        if(result.error){
+            return reject(result.error.details[0].message);
+
+        }
+        const sql = 'INSERT INTO genres SET ?';
+        connection.query(sql, genre, (error, result) => {
+            if (error){
+                return reject(error.sqlMessage);
+            }
+            return resolve(`${result.insertId}`);
+        });
+    });
+}
+
+function updateGenre(id, genre) {
+    return new Promise((resolve, reject) => {
+
+        const sql = `UPDATE genres SET genre = ? WHERE id = ?`;
+        connection.query(sql, [genre.genre, id], (error, result) => {
+            if (error){
+                return reject(error.sqlMessage);
+            }
+            return resolve(`${id}`);
+        });
+    });
+}
+
+
+function deleteGenre(id) {
+    return new Promise((resolve, reject) => {
+        const sql = 'DELETE FROM genres WHERE id = ?';
+        connection.query(sql, id, (error, result) => {
+            if (error){
+                return reject(error.sqlMessage);
+            }
+            return resolve({success : `Genre with id ${id} is deleted successfully`});
+        });
+    });
+}
+
+function validateGenre(genre) {
+    const schema = {
+        genre: Joi.string().required()
+    };
+
+    return  Joi.validate(genre, schema);
+}
+
+module.exports.getGenre = getGenre;
+module.exports.addGenre = addGenre;
+module.exports.updateGenre = updateGenre;
+module.exports.deleteGenre = deleteGenre;

@@ -1,0 +1,9 @@
+{
+  "jwtPrivateKey": "1234",
+  "db": {
+    "host": "localhost",
+    "user": "root",
+    "password": "",
+    "database": "movies_test"
+  }
+}
