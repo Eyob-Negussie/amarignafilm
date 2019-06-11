@@ -1,67 +1,47 @@
-const Joi = require('joi');
-const connection = require('../startup/db')();
+const {Genre, validate} = require('../models/genres');
 
-function getGenre() {
-    return new Promise((resolve, reject) => {
-        const sql = 'SELECT * FROM genres';
-        connection.query(sql, (error, results) => {
-            if (error){
-                return reject(error.sqlMessage);
-            }
-            return resolve(results);
-        });
-    });
+async function getGenre() {
+    return await Genre.find().sort('genre');;
 }
 
-function addGenre(genre) {
-    return new Promise((resolve, reject) => {
-        const result = validateGenre(genre);
-        if(result.error){
-            return reject(result.error.details[0].message);
+async function addGenre(genre) {
+    const {error} = validate(genre);
+    if(error){
+        throw new Error(error.details[0].message);
+        return;
+    }
 
-        }
-        const sql = 'INSERT INTO genres SET ?';
-        connection.query(sql, genre, (error, result) => {
-            if (error){
-                return reject(error.sqlMessage);
-            }
-            return resolve(`${result.insertId}`);
-        });
-    });
+    let newGenre = new Genre({genre: genre.genre});
+
+    return await newGenre.save();
 }
 
-function updateGenre(id, genre) {
-    return new Promise((resolve, reject) => {
+async function updateGenre(id, genre) {
+    const {error} = validate(genre);
+    if(error){
+        throw new Error(error.details[0].message);
+        return;
+    }
 
-        const sql = `UPDATE genres SET genre = ? WHERE id = ?`;
-        connection.query(sql, [genre.genre, id], (error, result) => {
-            if (error){
-                return reject(error.sqlMessage);
-            }
-            return resolve(`${id}`);
-        });
-    });
+    const updatedGenre = await Genre.findOneAndUpdate(id, genre, {new: true});
+    if(!updatedGenre){
+        throw new Error('The genre with the given ID was not found.');
+        return;
+    }
+
+    return updatedGenre;
 }
 
 
-function deleteGenre(id) {
-    return new Promise((resolve, reject) => {
-        const sql = 'DELETE FROM genres WHERE id = ?';
-        connection.query(sql, id, (error, result) => {
-            if (error){
-                return reject(error.sqlMessage);
-            }
-            return resolve({success : `Genre with id ${id} is deleted successfully`});
-        });
-    });
-}
+async function deleteGenre(id) {
+    const genre = await Genre.findByIdAndRemove(id);
 
-function validateGenre(genre) {
-    const schema = {
-        genre: Joi.string().required()
-    };
+    if(!genre){
+        throw new Error('The genre with the given ID was not found.');
+        return;
+    }
 
-    return  Joi.validate(genre, schema);
+    return genre;
 }
 
 module.exports.getGenre = getGenre;

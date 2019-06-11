@@ -1,38 +1,37 @@
 const Joi = require('joi');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const config = require('config');
-const users = require('../controllers/user');
+const {User} = require('../models/user');
 
-function authUser(user){
-    return new Promise(async (resolve, reject) => {
-        const result = validateCredential(user);
-        if(result.error){
-            return reject(result.error.details[0].message);
-        }
+async function authUser(user){
+    const {error} = validateCredential(user);
+    if(error){
+        throw new Error(error.details[0].message);
+        return;
+    }
 
-        const singleUser = await users.getUserByEmail(user.email);
-        if(!(singleUser && singleUser.id)){
-            return reject("Invalid email or password");
-        }
-        const validPassword = await bcrypt.compare(user.password, singleUser.password);
+    const singlrUser = await User.findOne({email: user.email});
+    if(!singlrUser){
+        throw new Error('Invalid email or password.');
+        return;
+    }
 
-        if(!validPassword){
-            return reject("Invalid email or password");
-        }
+    const validPassword = await bcrypt.compare(user.password, singlrUser.password);
+    if(!validPassword){
+        throw new Error('Invalid email or password.');
+        return;
+    }
 
-        const token = jwt.sign({id: singleUser.id}, config.get('jwtPrivateKey'));
-        return resolve({
-            user: singleUser,
-            token: token
-        });
-    });
+    const token = singlrUser.generateAuthToken();
+    return {
+        user: singlrUser,
+        token: token
+    }
 }
 
 function validateCredential(user) {
     const schema = {
-        email: Joi.string().email().required(),
-        password: Joi.string().required(),
+        email: Joi.string().min(5).max(50).required().email(),
+        password: Joi.string().min(5).max(255).required(),
     }
 
     return Joi.validate(user, schema);

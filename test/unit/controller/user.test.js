@@ -6,7 +6,7 @@ describe('user.getUsers', () => {
         expect(users).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
-                    name: 'Eyob'
+                    firstName: 'Eyob'
                 })
             ])
         );

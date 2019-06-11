@@ -1,72 +1,78 @@
-const Joi = require('joi');
-const connection = require('../startup/db')();
+const {Rental, validate} = require('../models/rental');
+const {Customer} = require('../models/customer');
+const {Movie} = require('../models/movie');
+const Fawn = require('fawn');
+const mongoose = require('mongoose');
 
-function getRentals() {
-    return new Promise((resolve, reject) => {
-        const sql = 'SELECT * FROM rentals';
-        connection.query(sql, (error, results) => {
-            if (error){
-                return reject(error.sqlMessage);
-            }
-            return resolve(results);
-        });
-    });
+Fawn.init(mongoose);
+
+async function getRentals() {
+    return await Rental.find().sort('dateOut');
 }
 
-function addRentals(rental) {
-    return new Promise((resolve, reject) => {
-        const result = validateRentals(rental);
-        if(result.error){
-            return reject(result.error.details[0].message);
-        }
+async function addRentals(rental) {
+    const { error } = validate(rental);
+    if (error){
+        throw new Error(error.details[0].message);
+        return;
+    }
 
-        const sql = 'INSERT INTO rentals SET ?';
-        connection.query(sql, rental, (error, result) => {
-            console.log(error);
-            if (error){
-                return reject(error.sqlMessage);
-            }
-            return resolve(`${result.insertId}`);
-        });
+    const customer = await Customer.findById(rental.customerId);
+    if(!customer){
+        throw new Error('Invalid customer.');
+        return;
+    }
+
+    const movie = await Movie.findById(rental.movieId);
+    if(!movie){
+        throw new Error('Invalid movie.');
+        return;
+    }
+
+    if(movie.numberInStock === 0){
+        throw new Error('Movie not in stock.');
+        return;
+    }
+
+    let newRental = new Rental({
+        customer: {
+            _id: customer._id,
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+            isGold: customer.isGold
+        },
+        movie: {
+            _id: movie._id,
+            title: movie.title,
+            dailyRentalRate: movie.dailyRentalRate,
+        }
     });
+
+    try {
+        new Fawn.Task()
+            .save('rentals', newRental)
+            .update('movies', {_id: movie._id},{
+                $inc: {numberInStock: -1}
+            })
+            .run()
+
+        return newRental;
+    }catch (ex) {
+        throw new Error(ex)
+    }
 }
 
 function updateRentals(id, rental) {
-    return new Promise((resolve, reject) => {
-
-        const sql = `UPDATE rentals SET ${rental.key} = ? WHERE id = ?`;
-        connection.query(sql, [rental.value, id], (error, result) => {
-            if (error){
-                return reject(error.sqlMessage);
-            }
-            return resolve(`${id}`);
-        });
-    });
+    //TODO
 }
 
 
 function deleteRentals(id) {
-    return new Promise((resolve, reject) => {
-        const sql = 'DELETE FROM rentals WHERE id = ?';
-        connection.query(sql, id, (error, result) => {
-            if (error){
-                return reject(error.sqlMessage);
-            }
-            return resolve({success : `Rentals with id ${id} is deleted successfully`});
-        });
-    });
+    // TODO
 }
 
-function validateRentals(rental) {
-    const schema = {
-        customerId: Joi.number().required(),
-        movieId: Joi.number().required()
-    }
-
-    return Joi.validate(rental, schema);
-}
 
 module.exports.getRentals = getRentals;
 module.exports.addRentals = addRentals;
-module.exports.updateRentals = updateRentals;
-module.exports.deleteRentals = deleteRentals;
+// module.exports.updateRentals = updateRentals;
+// module.exports.deleteRentals = deleteRentals;

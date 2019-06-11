@@ -1,120 +1,98 @@
 const Joi = require('joi');
-const connection = require('../startup/db')();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const config = require('config');
+const {User, validate} = require('../models/user');
 
-function getUsers() {
-    return new Promise((resolve, reject) => {
-        const sql = 'SELECT * FROM users';
-        connection.query(sql, (error, results) => {
-            if (error){
-                return reject(error.sqlMessage);
-            }
-            return resolve(results);
-        });
-    });
+async function getUsers() {
+    return await User.find().sort('name');
 }
 
-function getUser(id) {
-    return new Promise((resolve, reject) => {
-        const sql = 'SELECT * FROM users WHERE id = ?';
-        connection.query(sql, id,(error, results) => {
-            if (error){
-                return reject(error.sqlMessage);
-            }
-
-            if(!(Array.isArray(results) && results.length)){
-                return reject("User not found");
-            }
-            return resolve(results[0]);
-        });
-    });
-}
-
-function getUserByEmail(email) {
-    return new Promise((resolve, reject) => {
-        const sql = 'SELECT * FROM users WHERE email = ?';
-        connection.query(sql, email,(error, results) => {
-            if (error){
-                return reject(error.sqlMessage);
-            }
-            if(!(Array.isArray(results) && results.length)){
-                return reject("User not found");
-            }
-            return resolve(results[0]);
-        });
-    });
-}
-
-function addUsers(user){
-    return new Promise(async (resolve, reject) => {
-        const result = validateUsers(user);
-        if(result.error){
-            return reject(result.error.details[0].message);
-        }
-
-        const singleUser = await getUserByEmail(user.email);
-        if((Array.isArray(singleUser) && singleUser.length)){
-            return reject("User already Registered");
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(user.password, salt);
-
-        const sql = 'INSERT INTO users SET ?';
-        connection.query(sql, user, (error, result) => {
-            if (error){
-                return reject(error.sqlMessage);
-            }
-            const token = jwt.sign({id: singleUser.id}, config.get('jwtPrivateKey'));
-            return resolve({
-                id: `${result.insertId}`,
-                token: token
-            });
-        });
-    });
-}
-
-function updateUsers(id, user) {
-    return new Promise(async (resolve, reject) => {
-
-        if(user.key === 'password'){
-            const salt = await bcrypt.genSalt(10);
-            user.value = await bcrypt.hash(user.value, salt);
-        }
-
-        const sql = `UPDATE users SET ${user.key} = ? WHERE id = ?`;
-        connection.query(sql, [user.value, id], (error, result) => {
-            if (error){
-                return reject(error.sqlMessage);
-            }
-            return resolve(`${id}`);
-        });
-    });
-}
-
-
-function deleteUsers(id) {
-    return new Promise((resolve, reject) => {
-        const sql = 'DELETE FROM users WHERE id = ?';
-        connection.query(sql, id, (error, result) => {
-            if (error){
-                return reject(error.sqlMessage);
-            }
-            return resolve({success : `Rentals with id ${id} is deleted successfully`});
-        });
-    });
-}
-
-function validateUsers(user) {
-    const schema = {
-        name: Joi.string().required(),
-        email: Joi.string().email().required(),
-        password: Joi.string().required(),
+async function getUser(id) {
+    console.log('MMMMMMMMMMMMMMMMMMMMM', id);
+    const user = await User.findById(id);
+    console.log('MMMMMMMMMMMMMMMMMMMMM', user);
+    if(!user){
+        throw new Error('The user with the given ID was not found.');
+        return;
     }
 
-    return Joi.validate(user, schema);
+    return user;
+}
+
+async function getUserByEmail(email) {
+    const user = await User.findOne({ email: email });
+    if(!user){
+        throw new Error('The user with the given Email was not found.');
+        return;
+    }
+
+    return user;
+}
+
+async function addUsers(user){
+    const {error} = validate(user);
+    if(error){
+        throw new Error(error.details[0].message);
+        return;
+    }
+
+    let newUser = await User.findOne({ email: user.email });
+    if(newUser){
+        throw new Error('User already Registered');
+        return;
+    }
+
+    newUser = new User(user);
+    const salt = await bcrypt.genSalt(10);
+    newUser.password = await bcrypt.hash(user.password, salt);
+    await newUser.save();
+
+    const token = newUser.generateAuthToken();
+    return {
+        token: token,
+        user : newUser
+    }
+}
+
+async function updateUsers(id, user, isPassword) {
+    const {error} = validate(user);
+    if(error){
+        throw new Error(error.details[0].message);
+        return;
+    }
+
+    let newPassword;
+    if(isPassword){
+        const salt = await bcrypt.genSalt(10);
+        newPassword = await bcrypt.hash(user.password, salt);
+    }
+
+    let updatedUser = await User.findByIdAndUpdate(id, {
+        name: user.name,
+        email: user.email,
+        password: newPassword ? newPassword : user.password,
+        isAdmin: user.isAdmin,
+    });
+
+    if(!updatedUser){
+        throw new Error('The user with the given ID was not found.');
+        return;
+    }
+
+    return updatedUser;
+}
+
+
+async function deleteUsers(id) {
+    const user = await User.findByIdAndRemove(id);
+
+    if(!user){
+        throw new Error('The user with the given ID was not found.');
+        return;
+    }
+
+    return user;
 }
 
 module.exports.getUsers = getUsers;

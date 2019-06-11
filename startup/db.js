@@ -1,11 +1,10 @@
-const mysql = require('mysql');
-const config = require('config')
+const config = require('config');
+const mongoose = require('mongoose');
 
-module.exports = function () {
-    return mysql.createConnection({
-        host: config.get('db.host'),
-        user: config.get('db.user'),
-        password: config.get('db.password'),
-        database: config.get('db.database')
+module.exports = async function () {
+    await mongoose.connect(`mongodb://${config.get('db.host')}/${config.get('db.database')}`, {
+        useNewUrlParser: true,
+        useFindAndModify: false,
+        useCreateIndex: true,
     });
 }

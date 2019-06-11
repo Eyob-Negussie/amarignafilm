@@ -15,7 +15,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
     const result = await users.addUsers(req.body);
-    res.header('x-auth-token', result.token).send(result.id);
+    res.header('x-auth-token', result.token).send(result.user);
 });
 
 router.put('/:id', auth, async (req, res) => {
