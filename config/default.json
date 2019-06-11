@@ -1,9 +1,4 @@
 {
   "jwtPrivateKey": "",
-  "db": {
-    "host": "localhost",
-    "user": "",
-    "password": "",
-    "database": "movies"
-  }
+  "db": "mongodb://localhost/movies"
 }
