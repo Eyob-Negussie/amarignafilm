@@ -1,4 +1,4 @@
 {
   "jwtPrivateKey": "",
-  "db": "mongodb+srv://EyobTefera:getshedy3@cluster0-g1kl9.mongodb.net/test?retryWrites=true"
+  "db": "mongodb://localhost/movies"
 }
