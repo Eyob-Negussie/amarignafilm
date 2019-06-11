@@ -3,6 +3,7 @@ const winston = require('winston');
 const mongoose = require('mongoose');
 
 module.exports = function () {
+    // connect to db
     const db = config.get('db');
     mongoose.connect((db), {
         useNewUrlParser: true,
