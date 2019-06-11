@@ -1,3 +1,1 @@
-{"message":"Something Failed.","stack":"Error: Something Failed.\n    at Object.addRentals (D:\\Node_App\\Movie-Rental\\controllers\\rental.js:58:15)\n    at process._tickCallback (internal/process/next_tick.js:68:7)","level":"error","timestamp":"2019-06-11T04:28:10.942Z"}
-{"message":"Error: Fawn has not been initialized. Call Fawn.init","stack":"Error: Error: Fawn has not been initialized. Call Fawn.init\n    at Object.addRentals (D:\\Node_App\\Movie-Rental\\controllers\\rental.js:58:15)\n    at process._tickCallback (internal/process/next_tick.js:68:7)","level":"error","timestamp":"2019-06-11T04:29:41.947Z"}
-{"level":"info","message":"Connected to mongodb://localhost/movies...","timestamp":"2019-06-11T15:19:32.444Z"}
+{"level":"info","message":"Connected to mongodb://localhost/movies...","timestamp":"2019-06-11T15:26:55.092Z"}
