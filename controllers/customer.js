@@ -1,4 +1,3 @@
-const Joi = require('joi');
 const{Customer, validate} = require('../models/customer');
 
 async function getCustomer() {

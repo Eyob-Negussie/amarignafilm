@@ -9,21 +9,21 @@ async function authUser(user){
         return;
     }
 
-    const singlrUser = await User.findOne({email: user.email});
-    if(!singlrUser){
+    const singleUser = await User.findOne({email: user.email});
+    if(!singleUser){
         throw new Error('Invalid email or password.');
         return;
     }
 
-    const validPassword = await bcrypt.compare(user.password, singlrUser.password);
+    const validPassword = await bcrypt.compare(user.password, singleUser.password);
     if(!validPassword){
         throw new Error('Invalid email or password.');
         return;
     }
 
-    const token = singlrUser.generateAuthToken();
+    const token = singleUser.generateAuthToken();
     return {
-        user: singlrUser,
+        user: singleUser,
         token: token
     }
 }

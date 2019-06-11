@@ -1,7 +1,4 @@
-const Joi = require('joi');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const config = require('config');
 const {User, validate} = require('../models/user');
 
 async function getUsers() {
@@ -9,9 +6,7 @@ async function getUsers() {
 }
 
 async function getUser(id) {
-    console.log('MMMMMMMMMMMMMMMMMMMMM', id);
     const user = await User.findById(id);
-    console.log('MMMMMMMMMMMMMMMMMMMMM', user);
     if(!user){
         throw new Error('The user with the given ID was not found.');
         return;
