@@ -9,7 +9,7 @@ const express = require("express");
 const cors = require("cors");
 
 module.exports = function(app) {
-  app.use(cors());
+  app.use(cors({ exposedHeaders: ["x-auth-token"] }));
   app.use(express.json());
   app.use("/api/genres", genres);
   app.use("/api/customers", customers);
